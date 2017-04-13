@@ -1,0 +1,86 @@
+---
+
+- name: Install django as root using pip
+  pip: name=django
+
+- name: create django project = ovalrecords
+  command: django-admin.py startproject ovalrecords
+  ignore_errors: yes
+  args:
+    chdir: /home/ubuntu 
+
+- name: copy django settings file over to ovalrecords
+  copy: 
+    src: /vagrant/site_config/django/settings.py 
+    dest: /home/ubuntu/ovalrecords/
+    owner: ubuntu
+    group: ubuntu
+    mode: 0764
+
+- name: Install uwsgi as root using pip
+  pip: name=uwsgi
+
+- name: Copy uwsgi.ini to ovalrecords
+  copy: 
+    src: /vagrant/site_config/uwsgi.ini
+    dest: /home/ubuntu/ovalrecords/
+    owner: ubuntu
+    group: ubuntu
+    mode: 0764
+
+- name: Create sym link to uwisgi.ini
+  file: 
+    src: /home/ubuntu/ovalrecords/uwsgi.ini
+    dest: /etc/uwsgi/vassals/uwsgi.ini
+    owner: root
+    group: root
+    state: link
+
+- name: Change ownership of all files under ovalrecords to ubuntu
+  file: 
+    path: /home/ubuntu/ovalrecords
+    owner: ubuntu
+    recurse: yes
+
+- name: Add a line to rc.local to start uwsgi in emperor mode
+  lineinfile: 
+     dest: /etc/rc.local
+     insertbefore: '^exit 0'
+     line: 'sudo uwsgi --emperor /etc/uwsgi/vassals --uid ubuntu --gid ubuntu --daemonize /var/log/uwsgi-emperor.log'
+
+
+- name: Start uwsgi in emperor mode
+  command: uwsgi --emperor /etc/uwsgi/vassals --uid ubuntu --gid ubuntu --daemonize /var/log/uwsgi-emperor.log
+  ignore_errors: yes
+
+- name:  add uwsgi_params to project directory for nginx
+  get_url: 
+    url: https://github.com/nginx/nginx/blob/master/conf/uwsgi_params?raw=true 
+    dest: /home/ubuntu/ovalrecords
+    owner: ubuntu
+    group: ubuntu
+    mode: 0764
+
+- name: Instal nginx as root using pip
+  apt: name=nginx
+
+- name: Copy nginx config file
+  copy: 
+    src: /vagrant/site_config/nginx.conf
+    dest: /home/ubuntu/ovalrecords/
+    owner: ubuntu
+    group: ubuntu
+    mode: 0764
+
+- name: Create sym link to nginx conf file
+  file: 
+    src: /home/ubuntu/ovalrecords/nginx.conf
+    dest: /etc/nginx/sites-enabled/nginx.conf
+    owner: root
+    group: root  
+    state: link
+
+- name: Start nginx
+  command: /etc/init.d/nginx start
+
+

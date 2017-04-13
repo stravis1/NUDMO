@@ -1,0 +1,7 @@
+[webservers]
+web-01  ansible_host=192.168.2.13  # add the web servers ip
+
+[dbservers]
+db-01 ansible_host=192.168.2.15    # add the db servers ip
+
+
